@@ -5,6 +5,8 @@ env:
     ####
     #### Global variables used for all tasks
     ####
+    # Name of the ultimate destination branch for this CI run, PR or post-merge.
+    DEST_BRANCH: "master"
     GOPATH: "/var/tmp/go"
     GOSRC: "${GOPATH}/src/github.com/containers/buildah"
     # Overrides default location (/tmp/cirrus) for repo clone
@@ -54,7 +56,13 @@ gce_instance:
 
 
 # Update metadata on VM images referenced by this repository state
-meta_task:
+'cirrus-ci/pr_only/meta_task':
+
+    # see .bors.toml
+    skip: >-
+        $CIRRUS_BRANCH =~ "staging.*" ||
+        $CIRRUS_BRANCH =~ "trying.*" ||
+        $CIRRUS_BRANCH == $DEST_BRANCH
 
     container:
         image: "quay.io/libpod/imgts:latest"  # see contrib/imgts
@@ -78,15 +86,20 @@ meta_task:
     script: '/usr/local/bin/entrypoint.sh |& ${_TIMESTAMP}'
 
 
-gate_task:
+'cirrus-ci/pr_only/gate_task':
+
+    # see .bors.toml
+    skip: >-
+        $CIRRUS_BRANCH =~ "staging.*" ||
+        $CIRRUS_BRANCH =~ "trying.*" ||
+        $CIRRUS_BRANCH == $DEST_BRANCH
 
     timeout_in: 30m
 
     setup_script: '${SCRIPT_BASE}/setup.sh |& ${_TIMESTAMP}'
     build_script: '${SCRIPT_BASE}/build.sh |& ${_TIMESTAMP}'
     validate_test_script: '${SCRIPT_BASE}/test.sh validate |& ${_TIMESTAMP}'
-    # FIXME: some tests broken
-    # unit_test_script: '${SCRIPT_BASE}/test.sh unit |& ${_TIMESTAMP}'
+    unit_test_script: '${SCRIPT_BASE}/test.sh unit |& ${_TIMESTAMP}'
 
     binary_artifacts:
         path: ./bin/*
@@ -96,7 +109,13 @@ gate_task:
 # whether the git tree is clean.  The reasoning for that is to make sure
 # that the vendor.conf, the code and the vendored packages in ./vendor are
 # in sync at all times.
-vendor_task:
+'cirrus-ci/pr_only/vendor_task':
+
+    # see .bors.toml
+    skip: >-
+        $CIRRUS_BRANCH =~ "staging.*" ||
+        $CIRRUS_BRANCH =~ "trying.*" ||
+        $CIRRUS_BRANCH == $DEST_BRANCH
 
     env:
         CIRRUS_WORKING_DIR: "/var/tmp/go/src/github.com/containers/buildah"
@@ -116,11 +135,17 @@ vendor_task:
         - './hack/tree_status.sh'
 
 
-cross_task:
+'cirrus-ci/pr_only/cross_task':
+
+    # see .bors.toml
+    skip: >-
+        $CIRRUS_BRANCH =~ "staging.*" ||
+        $CIRRUS_BRANCH =~ "trying.*" ||
+        $CIRRUS_BRANCH == $DEST_BRANCH
 
     depends_on:
-        - gate
-        - vendor
+        - 'cirrus-ci/pr_only/gate'
+        - 'cirrus-ci/pr_only/vendor'
 
     container:
         image: registry.fedoraproject.org/fedora:30
@@ -136,11 +161,16 @@ cross_task:
         path: ./bin/*
 
 
-testing_task:
+'cirrus-ci/required/testing_task':
+
+    # see .bors.toml
+    skip: >-
+        $CIRRUS_BRANCH == "staging.tmp" ||
+        $CIRRUS_BRANCH == "trying.tmp"
 
     depends_on:
-        - gate
-        - vendor
+        - 'cirrus-ci/pr_only/gate'
+        - 'cirrus-ci/pr_only/vendor'
 
     # TODO: Fix these to support removal of travis CI testing
     allow_failures: $CI == 'true'  # always ignore failures
@@ -170,11 +200,16 @@ testing_task:
         package_versions_script: '$GOSRC/$SCRIPT_BASE/logcollector.sh packages'
 
 
-testing_in_podman_task:
+'cirrus-ci/required/in_podman_task':
+
+    # see .bors.toml
+    skip: >-
+        $CIRRUS_BRANCH == "staging.tmp" ||
+        $CIRRUS_BRANCH == "trying.tmp"
 
     depends_on:
-        - gate
-        - vendor
+        - 'cirrus-ci/pr_only/gate'
+        - 'cirrus-ci/pr_only/vendor'
 
     env:
         # This is key, it causes the scripts to re-execute themselves inside a container.
