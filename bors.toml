@@ -24,14 +24,12 @@
 #
 # Note: The wild-card character '%' is available.
 status = [
-    "continuous-integration/travis-ci%",
     "cirrus-ci/required/%",
     "cirrus-ci/br_only/%",
 ]
 
 # Same as 'status' (above) but statuses that must pass on every PR
 pr_status = [
-    "continuous-integration/travis-ci%",
     "cirrus-ci/required/%",
     "cirrus-ci/pr_only/%",
 ]
