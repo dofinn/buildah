@@ -25,13 +25,12 @@
 # Note: The wild-card character '%' is available.
 status = [
     "cirrus-ci/required/%",
-    "cirrus-ci/br_only/%",
 ]
 
 # Same as 'status' (above) but statuses that must pass on every PR
 pr_status = [
     "cirrus-ci/required/%",
-    "cirrus-ci/pr_only/%",
+    "cirrus-ci/only_prs/%",
 ]
 
 # Cirrus-CI Max Timeout is 60 * 60 * 2
